@@ -33,7 +33,7 @@ let interval = null;
 function startGameLoop() {
   multiplier = 0;
   isCrashed = false;
-  isBetWindowOpen = false;
+  // isBetWindowOpen = false;
 
   // Move all pending bets to active bets
   activeBets = { ...nextRoundBets };
@@ -64,6 +64,9 @@ function startGameLoop() {
         io.emit("next_round_timer", { timeLeft: countdown });
         countdown--;
         if (countdown < 0) {
+          io.emit("new_round", { nextRoundIn: 0 });
+          isBetWindowOpen = false;
+
           clearInterval(countdownInterval);
           startGameLoop();
         }
@@ -82,7 +85,7 @@ io.on("connection", (socket) => {
     socket.emit("game_update", { multiplier });
   }
 
-  socket.emit("new_round", { nextRoundIn: 0 });
+  // socket.emit("new_round", { nextRoundIn: 0 });
 
   /**
    * Handles user bet placement.
