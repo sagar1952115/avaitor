@@ -22,6 +22,8 @@ const CRASH_PROBABILITY_FACTOR = 0.02;
 const MULTIPLIER_INCREMENT = 0.05;
 const NEXT_ROUND_WAIT_TIME = 10;
 
+let activeUsers = [];
+
 let multiplier = 0;
 let isCrashed = false;
 let isBetWindowOpen = true;
@@ -79,6 +81,8 @@ function startGameLoop() {
 
 io.on("connection", (socket) => {
   console.log(`✅ User connected: ${socket.id}`);
+  activeUsers.push(socket.id);
+  console.log(activeUsers.length);
 
   if (isCrashed) {
     socket.emit("game_crash", { crashPoint: multiplier });
@@ -104,7 +108,11 @@ io.on("connection", (socket) => {
 
     nextRoundBets[socket.id].push({ amount, time: Date.now() });
 
-    socket.emit("bet_placed", { success: true, nextRound: !isBetWindowOpen });
+    socket.emit("bet_placed", {
+      success: true,
+      amount,
+      nextRound: !isBetWindowOpen
+    });
     console.log(`💰 User ${socket.id} placed a bet of $${amount}`);
   });
 
@@ -117,9 +125,11 @@ io.on("connection", (socket) => {
       return;
     }
 
+    let amount = nextRoundBets[socket.id][0].amount;
+    console.log(amount);
     delete nextRoundBets[socket.id];
     console.log(`🚫 User ${socket.id} removed their bet`);
-    socket.emit("bet_removed", { success: true });
+    socket.emit("bet_removed", { amount, success: true });
   });
 
   /**
@@ -152,6 +162,7 @@ io.on("connection", (socket) => {
    * Handles user disconnection.
    */
   socket.on("disconnect", () => {
+    activeUsers = activeUsers.filter((user) => user !== socket.id);
     console.log(`❌ User disconnected: ${socket.id}`);
     delete nextRoundBets[socket.id]; // Keep active bets in case they reconnect
   });
